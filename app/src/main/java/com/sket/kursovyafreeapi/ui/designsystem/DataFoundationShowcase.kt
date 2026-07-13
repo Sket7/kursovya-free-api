@@ -60,22 +60,27 @@ class DataFoundationShowcase private constructor(
         )
     }
 
-    suspend fun readEpisodeMark(): Boolean =
-        database.episodeUserDataDao().getByEpisodeId(SHOWCASE_EPISODE_ID) != null
+    suspend fun readEpisodeNote(): ShowcaseEpisodeNote? =
+        database.episodeUserDataDao()
+            .getByEpisodeId(SHOWCASE_EPISODE_ID)
+            ?.toShowcaseNote()
 
-    suspend fun saveEpisodeMark() {
+    suspend fun saveEpisodeNote(note: ShowcaseEpisodeNote): ShowcaseEpisodeNote {
         database.episodeUserDataDao().upsert(
             EpisodeUserDataEntity(
                 episodeId = SHOWCASE_EPISODE_ID,
-                isWatched = true,
-                rating = null,
-                comment = "",
+                isWatched = note.isWatched,
+                rating = note.rating,
+                comment = note.comment,
                 updatedAt = System.currentTimeMillis()
             )
         )
+        return requireNotNull(readEpisodeNote()) {
+            "Не удалось прочитать заметку после сохранения в Room"
+        }
     }
 
-    suspend fun deleteEpisodeMark() {
+    suspend fun deleteEpisodeNote() {
         database.episodeUserDataDao().delete(SHOWCASE_EPISODE_ID)
     }
 
@@ -93,6 +98,18 @@ class DataFoundationShowcase private constructor(
         )
     }
 }
+
+data class ShowcaseEpisodeNote(
+    val isWatched: Boolean,
+    val rating: Int?,
+    val comment: String
+)
+
+private fun EpisodeUserDataEntity.toShowcaseNote() = ShowcaseEpisodeNote(
+    isWatched = isWatched,
+    rating = rating,
+    comment = comment
+)
 
 data class DataCheckResult(
     val endpoint: String,

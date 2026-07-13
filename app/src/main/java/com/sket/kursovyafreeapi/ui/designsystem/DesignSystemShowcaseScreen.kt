@@ -19,9 +19,12 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -30,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -75,14 +79,22 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
     var episodeState by remember { mutableStateOf(CheckState()) }
     var locationState by remember { mutableStateOf(CheckState()) }
     var isEpisodeSaved by remember { mutableStateOf(false) }
+    var isWatched by rememberSaveable { mutableStateOf(true) }
+    var rating by rememberSaveable { mutableStateOf<Int?>(null) }
+    var comment by rememberSaveable { mutableStateOf("") }
     var storageMessage by remember { mutableStateOf("Проверяем Room…") }
     var isStorageLoading by remember { mutableStateOf(true) }
 
     LaunchedEffect(dataFoundation) {
-        runCatching { dataFoundation.readEpisodeMark() }
-            .onSuccess { saved ->
-                isEpisodeSaved = saved
-                storageMessage = if (saved) "Сохранено в Room" else "Записи в Room нет"
+        runCatching { dataFoundation.readEpisodeNote() }
+            .onSuccess { savedNote ->
+                isEpisodeSaved = savedNote != null
+                savedNote?.let { note ->
+                    isWatched = note.isWatched
+                    rating = note.rating
+                    comment = note.comment
+                }
+                storageMessage = savedNote?.storageSummary() ?: "Записи в Room нет"
             }
             .onFailure { error -> storageMessage = error.displayMessage() }
         isStorageLoading = false
@@ -153,7 +165,12 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
                 modifier = Modifier.padding(RickAndMortyTheme.spacing.medium),
                 verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
             ) {
-                Text("Локальная отметка эпизода №1", style = RickAndMortyTheme.typography.titleMedium)
+                Text("Локальная заметка к эпизоду №1", style = RickAndMortyTheme.typography.titleMedium)
+                Text(
+                    text = "Поля сохраняются одной записью в таблице episode_user_data.",
+                    style = RickAndMortyTheme.typography.bodySmall,
+                    color = RickAndMortyTheme.colors.onSurfaceVariant
+                )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
@@ -172,6 +189,57 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
                 }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text("Эпизод просмотрен", style = RickAndMortyTheme.typography.labelLarge)
+                        Text(
+                            text = if (isWatched) "Да" else "Нет",
+                            style = RickAndMortyTheme.typography.bodySmall,
+                            color = RickAndMortyTheme.colors.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = isWatched,
+                        enabled = !isStorageLoading,
+                        onCheckedChange = { isWatched = it }
+                    )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)) {
+                    Text("Оценка", style = RickAndMortyTheme.typography.labelLarge)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)
+                    ) {
+                        (1..5).forEach { value ->
+                            FilterChip(
+                                modifier = Modifier.weight(1f),
+                                selected = rating == value,
+                                enabled = !isStorageLoading,
+                                onClick = { rating = value },
+                                label = { Text(value.toString()) }
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    modifier = Modifier.fillMaxWidth(),
+                    value = comment,
+                    enabled = !isStorageLoading,
+                    onValueChange = { value ->
+                        comment = value.take(MAX_SHOWCASE_COMMENT_LENGTH)
+                    },
+                    label = { Text("Комментарий") },
+                    placeholder = { Text("Например: отличный пилотный эпизод") },
+                    supportingText = {
+                        Text("${comment.length}/$MAX_SHOWCASE_COMMENT_LENGTH")
+                    },
+                    minLines = 3,
+                    maxLines = 5
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
                 ) {
                     Button(
@@ -180,10 +248,21 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
                         onClick = {
                             scope.launch {
                                 isStorageLoading = true
-                                runCatching { dataFoundation.saveEpisodeMark() }
-                                    .onSuccess {
-                                        isEpisodeSaved = dataFoundation.readEpisodeMark()
-                                        storageMessage = "Сохранено в Room"
+                                runCatching {
+                                    dataFoundation.saveEpisodeNote(
+                                        ShowcaseEpisodeNote(
+                                            isWatched = isWatched,
+                                            rating = rating,
+                                            comment = comment.trim()
+                                        )
+                                    )
+                                }
+                                    .onSuccess { savedNote ->
+                                        isEpisodeSaved = true
+                                        isWatched = savedNote.isWatched
+                                        rating = savedNote.rating
+                                        comment = savedNote.comment
+                                        storageMessage = savedNote.storageSummary()
                                     }
                                     .onFailure { error -> storageMessage = error.displayMessage() }
                                 isStorageLoading = false
@@ -198,10 +277,10 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
                         onClick = {
                             scope.launch {
                                 isStorageLoading = true
-                                runCatching { dataFoundation.deleteEpisodeMark() }
+                                runCatching { dataFoundation.deleteEpisodeNote() }
                                     .onSuccess {
-                                        isEpisodeSaved = dataFoundation.readEpisodeMark()
-                                        storageMessage = "Удалено из Room"
+                                        isEpisodeSaved = dataFoundation.readEpisodeNote() != null
+                                        storageMessage = "Удалено из Room: запись не найдена"
                                     }
                                     .onFailure { error -> storageMessage = error.displayMessage() }
                                 isStorageLoading = false
@@ -305,6 +384,15 @@ private data class CheckState(
     val isSuccess: Boolean = false,
     val result: DataCheckResult? = null
 )
+
+private const val MAX_SHOWCASE_COMMENT_LENGTH = 300
+
+private fun ShowcaseEpisodeNote.storageSummary(): String {
+    val watched = if (isWatched) "просмотрено" else "не просмотрено"
+    val score = rating?.let { "оценка $it/5" } ?: "без оценки"
+    val note = if (comment.isBlank()) "без комментария" else "комментарий сохранён"
+    return "Room: $watched · $score · $note"
+}
 
 private fun Throwable.displayMessage(): String =
     localizedMessage?.take(120) ?: "Неизвестная ошибка"
