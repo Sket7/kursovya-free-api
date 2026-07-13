@@ -1,0 +1,412 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "b3e6307a6ed0f31f6026870c6b4ad773",
+    "entities": [
+      {
+        "tableName": "characters",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `status` TEXT NOT NULL, `species` TEXT NOT NULL, `type` TEXT NOT NULL, `gender` TEXT NOT NULL, `originName` TEXT NOT NULL, `originUrl` TEXT, `originId` INTEGER, `locationName` TEXT NOT NULL, `locationUrl` TEXT, `locationId` INTEGER, `imageUrl` TEXT NOT NULL, `episodeIds` TEXT NOT NULL, `resourceUrl` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "status",
+            "columnName": "status",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "species",
+            "columnName": "species",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gender",
+            "columnName": "gender",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originName",
+            "columnName": "originName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originUrl",
+            "columnName": "originUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "originId",
+            "columnName": "originId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "locationName",
+            "columnName": "locationName",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "locationUrl",
+            "columnName": "locationUrl",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "locationId",
+            "columnName": "locationId",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "imageUrl",
+            "columnName": "imageUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "episodeIds",
+            "columnName": "episodeIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceUrl",
+            "columnName": "resourceUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "episodes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `airDate` TEXT NOT NULL, `code` TEXT NOT NULL, `characterIds` TEXT NOT NULL, `resourceUrl` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "airDate",
+            "columnName": "airDate",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "code",
+            "columnName": "code",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "characterIds",
+            "columnName": "characterIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceUrl",
+            "columnName": "resourceUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "locations",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `dimension` TEXT NOT NULL, `residentIds` TEXT NOT NULL, `resourceUrl` TEXT NOT NULL, `createdAt` TEXT NOT NULL, `cachedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "dimension",
+            "columnName": "dimension",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "residentIds",
+            "columnName": "residentIds",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "resourceUrl",
+            "columnName": "resourceUrl",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "createdAt",
+            "columnName": "createdAt",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "episode_user_data",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`episodeId` INTEGER NOT NULL, `isWatched` INTEGER NOT NULL, `rating` INTEGER, `comment` TEXT NOT NULL, `updatedAt` INTEGER NOT NULL, PRIMARY KEY(`episodeId`))",
+        "fields": [
+          {
+            "fieldPath": "episodeId",
+            "columnName": "episodeId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isWatched",
+            "columnName": "isWatched",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "rating",
+            "columnName": "rating",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "comment",
+            "columnName": "comment",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updatedAt",
+            "columnName": "updatedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "episodeId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_episode_user_data_isWatched",
+            "unique": false,
+            "columnNames": [
+              "isWatched"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_episode_user_data_isWatched` ON `${TABLE_NAME}` (`isWatched`)"
+          }
+        ]
+      },
+      {
+        "tableName": "cached_queries",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`resourceType` TEXT NOT NULL, `nextPage` INTEGER, `previousPage` INTEGER, `totalCount` INTEGER NOT NULL, `totalPages` INTEGER NOT NULL, `cachedAt` INTEGER NOT NULL, `queryKey` TEXT NOT NULL, PRIMARY KEY(`queryKey`))",
+        "fields": [
+          {
+            "fieldPath": "resourceType",
+            "columnName": "resourceType",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "nextPage",
+            "columnName": "nextPage",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "previousPage",
+            "columnName": "previousPage",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "totalCount",
+            "columnName": "totalCount",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "totalPages",
+            "columnName": "totalPages",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "cachedAt",
+            "columnName": "cachedAt",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "queryKey",
+            "columnName": "queryKey",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "queryKey"
+          ]
+        }
+      },
+      {
+        "tableName": "cached_query_items",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`queryKey` TEXT NOT NULL, `itemId` INTEGER NOT NULL, `position` INTEGER NOT NULL, PRIMARY KEY(`queryKey`, `itemId`), FOREIGN KEY(`queryKey`) REFERENCES `cached_queries`(`queryKey`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "queryKey",
+            "columnName": "queryKey",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "itemId",
+            "columnName": "itemId",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "position",
+            "columnName": "position",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": false,
+          "columnNames": [
+            "queryKey",
+            "itemId"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_cached_query_items_queryKey",
+            "unique": false,
+            "columnNames": [
+              "queryKey"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_cached_query_items_queryKey` ON `${TABLE_NAME}` (`queryKey`)"
+          },
+          {
+            "name": "index_cached_query_items_queryKey_position",
+            "unique": true,
+            "columnNames": [
+              "queryKey",
+              "position"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_cached_query_items_queryKey_position` ON `${TABLE_NAME}` (`queryKey`, `position`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "cached_queries",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "queryKey"
+            ],
+            "referencedColumns": [
+              "queryKey"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'b3e6307a6ed0f31f6026870c6b4ad773')"
+    ]
+  }
+}
