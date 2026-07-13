@@ -90,12 +90,24 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
 
     fun runCheck(
         update: (CheckState) -> Unit,
-        request: suspend () -> String
+        request: suspend () -> DataCheckResult
     ) {
         scope.launch {
             update(CheckState(isLoading = true, message = "Выполняется запрос…"))
             runCatching { request() }
-                .onSuccess { message -> update(CheckState(message = message, isSuccess = true)) }
+                .onSuccess { result ->
+                    update(
+                        CheckState(
+                            message = if (result.isFullyCached) {
+                                "Получено ${result.receivedCount}, записано и прочитано из Room ${result.cachedCount}"
+                            } else {
+                                "Получено ${result.receivedCount}, найдено в Room ${result.cachedCount}"
+                            },
+                            isSuccess = result.isFullyCached,
+                            result = result
+                        )
+                    )
+                }
                 .onFailure { error -> update(CheckState(message = error.displayMessage())) }
         }
     }
@@ -104,7 +116,7 @@ private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
         Column(verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)) {
             Text("Проверка data-основы", style = RickAndMortyTheme.typography.headlineSmall)
             Text(
-                text = "Кнопки выполняют настоящие запросы к API и проверяют запись ответа в Room.",
+                text = "Каждая кнопка выполняет REST-запрос, сразу делает upsert ответа в Room, а затем читает эти же записи из базы.",
                 style = RickAndMortyTheme.typography.bodyMedium,
                 color = RickAndMortyTheme.colors.onSurfaceVariant
             )
@@ -211,38 +223,78 @@ private fun DataCheckCard(
     onClick: () -> Unit
 ) {
     Card {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(RickAndMortyTheme.spacing.medium),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.medium)
+            verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
         ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.medium)
             ) {
-                Text(title, style = RickAndMortyTheme.typography.titleMedium)
-                Text(
-                    text = state.message,
-                    style = RickAndMortyTheme.typography.bodySmall,
-                    color = when (state.isSuccess) {
-                        true -> RickAndMortyTheme.extendedColors.alive
-                        false -> RickAndMortyTheme.colors.onSurfaceVariant
-                    }
-                )
-            }
-            Button(enabled = !state.isLoading, onClick = onClick) {
-                if (state.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(18.dp),
-                        color = RickAndMortyTheme.colors.onPrimary,
-                        strokeWidth = 2.dp
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)
+                ) {
+                    Text(title, style = RickAndMortyTheme.typography.titleMedium)
+                    Text(
+                        text = state.message,
+                        style = RickAndMortyTheme.typography.bodySmall,
+                        color = when (state.isSuccess) {
+                            true -> RickAndMortyTheme.extendedColors.alive
+                            false -> RickAndMortyTheme.colors.onSurfaceVariant
+                        }
                     )
-                } else {
-                    Text("Проверить")
+                }
+                Button(enabled = !state.isLoading, onClick = onClick) {
+                    if (state.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = RickAndMortyTheme.colors.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Проверить")
+                    }
                 }
             }
+
+            state.result?.let { result ->
+                DataCheckDetails(result)
+            }
+        }
+    }
+}
+
+@Composable
+private fun DataCheckDetails(result: DataCheckResult) {
+    Column(verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)) {
+        Text(
+            text = "1. ${result.endpoint}",
+            style = RickAndMortyTheme.typography.labelLarge
+        )
+        DataPreview(title = "2. Ответ API (${result.receivedCount})", items = result.receivedPreview)
+        DataPreview(
+            title = "3. Upsert → чтение из Room (${result.cachedCount})",
+            items = result.cachedPreview
+        )
+    }
+}
+
+@Composable
+private fun DataPreview(title: String, items: List<String>) {
+    Column(verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)) {
+        Text(
+            text = title,
+            style = RickAndMortyTheme.typography.labelMedium,
+            color = RickAndMortyTheme.colors.onSurfaceVariant
+        )
+        items.forEach { item ->
+            Text(
+                text = "• $item",
+                style = RickAndMortyTheme.typography.bodySmall
+            )
         }
     }
 }
@@ -250,7 +302,8 @@ private fun DataCheckCard(
 private data class CheckState(
     val isLoading: Boolean = false,
     val message: String = "Ещё не проверено",
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val result: DataCheckResult? = null
 )
 
 private fun Throwable.displayMessage(): String =
