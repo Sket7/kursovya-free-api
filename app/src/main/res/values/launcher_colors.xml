@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="launcher_space_top">#102923</color>
+    <color name="launcher_space_bottom">#071310</color>
+    <color name="launcher_star_soft">#8072F5BC</color>
+    <color name="launcher_star_bright">#D9E9C349</color>
+    <color name="launcher_orbit">#9EEFFD</color>
+    <color name="launcher_portal_shadow">#001F18</color>
+    <color name="launcher_portal_outer">#72F5BC</color>
+    <color name="launcher_portal_inner_light">#00A878</color>
+    <color name="launcher_portal_inner_dark">#004F58</color>
+    <color name="launcher_portal_spiral">#E8FF8A</color>
+    <color name="launcher_portal_spark">#FFE178</color>
+</resources>
