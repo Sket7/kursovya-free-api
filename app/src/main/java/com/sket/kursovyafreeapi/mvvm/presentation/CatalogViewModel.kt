@@ -17,22 +17,22 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
-data class CatalogUiState<T, Q>(val query: Q, val items: List<T> = emptyList(), val page: Int = 1, val totalPages: Int = 1, val totalCount: Int = 0, val loading: Boolean = false, val refreshing: Boolean = false, val fromCache: Boolean = false, val error: String? = null) {
-    val empty get() = !loading && items.isEmpty() && error == null
-    val canBack get() = page > 1 && !loading && !refreshing
-    val canForward get() = page < totalPages && !loading && !refreshing
+data class CatalogUiState<T, Q>(val query: Q, val items: List<T> = emptyList(), val page: Int = 1, val totalPages: Int = 1, val totalCount: Int = 0, val isLoading: Boolean = false, val isRefreshing: Boolean = false, val isFromCache: Boolean = false, val errorMessage: String? = null) {
+    val isEmpty get() = !isLoading && items.isEmpty() && errorMessage == null
+    val canGoBack get() = page > 1 && !isLoading && !isRefreshing
+    val canGoForward get() = page < totalPages && !isLoading && !isRefreshing
 }
 
 open class CatalogViewModel<T, Q>(initial: Q, private val pageOf: (Q) -> Int, private val withPage: (Q, Int) -> Q, private val cached: suspend (Q) -> CachedPage<T>?, private val refresh: suspend (Q) -> CachedPage<T>) : ViewModel() {
     private val mutableState = MutableStateFlow(CatalogUiState<T, Q>(initial, page = pageOf(initial)))
     val state = mutableState.asStateFlow(); private var job: Job? = null
     init { load(initial) }
-    fun update(query: Q, debounce: Boolean = true) = load(withPage(query, 1), if (debounce) 450 else 0)
+    fun updateQuery(query: Q, debounce: Boolean = true) = load(withPage(query, 1), if (debounce) 450 else 0)
     fun retry() = load(mutableState.value.query)
-    fun previous() { mutableState.value.takeIf { it.canBack }?.let { load(withPage(it.query, it.page - 1)) } }
-    fun next() { mutableState.value.takeIf { it.canForward }?.let { load(withPage(it.query, it.page + 1)) } }
-    private fun load(query: Q, wait: Long = 0) { job?.cancel(); job = viewModelScope.launch { if (wait > 0) delay(wait); val local = cached(query); mutableState.value = local?.state(query, pageOf(query), refreshing = true, fromCache = true) ?: CatalogUiState(query, page = pageOf(query), loading = true); try { mutableState.value = refresh(query).state(query, pageOf(query)) } catch (e: Throwable) { if (e is CancellationException) throw e; mutableState.value = mutableState.value.copy(loading = false, refreshing = false, fromCache = mutableState.value.items.isNotEmpty(), error = e.userMessage()) } } }
-    private fun CachedPage<T>.state(query: Q, page: Int, refreshing: Boolean = false, fromCache: Boolean = false) = CatalogUiState(query, items, page, totalPages.coerceAtLeast(1), totalCount, refreshing = refreshing, fromCache = fromCache)
+    fun previousPage() { mutableState.value.takeIf { it.canGoBack }?.let { load(withPage(it.query, it.page - 1)) } }
+    fun nextPage() { mutableState.value.takeIf { it.canGoForward }?.let { load(withPage(it.query, it.page + 1)) } }
+    private fun load(query: Q, wait: Long = 0) { job?.cancel(); job = viewModelScope.launch { if (wait > 0) delay(wait); val local = cached(query); mutableState.value = local?.state(query, pageOf(query), isRefreshing = true, isFromCache = true) ?: CatalogUiState(query, page = pageOf(query), isLoading = true); try { mutableState.value = refresh(query).state(query, pageOf(query)) } catch (e: Throwable) { if (e is CancellationException) throw e; mutableState.value = mutableState.value.copy(isLoading = false, isRefreshing = false, isFromCache = mutableState.value.items.isNotEmpty(), errorMessage = e.userMessage()) } } }
+    private fun CachedPage<T>.state(query: Q, page: Int, isRefreshing: Boolean = false, isFromCache: Boolean = false) = CatalogUiState(query, items, page, totalPages.coerceAtLeast(1), totalCount, isRefreshing = isRefreshing, isFromCache = isFromCache)
 }
 
 class EpisodesViewModel(repo: CatalogRepository) : CatalogViewModel<Episode, EpisodeQuery>(EpisodeQuery(), EpisodeQuery::page, { q, p -> q.copy(page = p) }, repo::cachedEpisodes, repo::refreshEpisodes)
