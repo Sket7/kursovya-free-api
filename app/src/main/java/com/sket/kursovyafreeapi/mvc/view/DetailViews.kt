@@ -66,12 +66,18 @@ fun EpisodeDetailsView(id: Int, graph: MvcGraph, onBack: () -> Unit, onCharacter
 }
 
 @Composable
-fun CharacterDetailsView(id: Int, model: CatalogModel, onBack: () -> Unit, onEpisode: (Int) -> Unit) {
+fun CharacterDetailsView(
+    id: Int,
+    model: CatalogModel,
+    onBack: () -> Unit,
+    onEpisode: (Int) -> Unit,
+    onLocation: (Int) -> Unit
+) {
     val scope = rememberCoroutineScope(); val controller = remember(id, model, scope) { CharacterDetailsController(id, model, scope) }; val state by controller.state.collectAsState()
     LaunchedEffect(controller) { controller.start() }
     LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         item { BackHeader("Персонаж", onBack) }
-        state.item?.let { value -> item { AsyncImage(value.imageUrl, value.name, Modifier.fillMaxWidth()); Text(value.name, style = RickAndMortyTheme.typography.headlineMedium); Text("${value.status} · ${value.species} · ${value.gender}"); Text("Происхождение: ${value.origin.name}"); Text("Локация: ${value.location.name}") } }
+        state.item?.let { value -> item { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { AsyncImage(value.imageUrl, value.name, Modifier.fillMaxWidth()); Text(value.name, style = RickAndMortyTheme.typography.headlineMedium); Text("${value.status} · ${value.species} · ${value.gender}"); Text("Происхождение: ${value.origin.name}"); value.origin.id?.let { OutlinedButton({ onLocation(it) }) { Text("Открыть происхождение") } }; Text("Локация: ${value.location.name}"); value.location.id?.let { OutlinedButton({ onLocation(it) }) { Text("Открыть локацию") } } } } }
         item { Text("Эпизоды", style = RickAndMortyTheme.typography.titleLarge) }
         items(state.related) { EpisodeCard(it, onEpisode) }
         if (state.isLoading) item { Text("Загрузка…") }

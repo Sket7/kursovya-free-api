@@ -39,9 +39,13 @@ fun MvcApp() {
                 }
             }
             entry<MvcRoute.CharacterDetails> { route ->
-                CharacterDetailsView(route.id, graph.catalog, { backStack.removeLastOrNull() }) {
-                    backStack.add(MvcRoute.EpisodeDetails(it))
-                }
+                CharacterDetailsView(
+                    id = route.id,
+                    model = graph.catalog,
+                    onBack = { backStack.removeLastOrNull() },
+                    onEpisode = { backStack.add(MvcRoute.EpisodeDetails(it)) },
+                    onLocation = { backStack.add(MvcRoute.LocationDetails(it)) }
+                )
             }
             entry<MvcRoute.Locations> {
                 LocationsView(graph.catalog, onBack = { backStack.removeLastOrNull() }) {
