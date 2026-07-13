@@ -11,6 +11,9 @@ interface EpisodeUserDataDao {
     @Query("SELECT * FROM episode_user_data WHERE episodeId = :episodeId")
     fun observeByEpisodeId(episodeId: Int): Flow<EpisodeUserDataEntity?>
 
+    @Query("SELECT * FROM episode_user_data WHERE episodeId = :episodeId")
+    suspend fun getByEpisodeId(episodeId: Int): EpisodeUserDataEntity?
+
     @Query("SELECT * FROM episode_user_data")
     fun observeAll(): Flow<List<EpisodeUserDataEntity>>
 

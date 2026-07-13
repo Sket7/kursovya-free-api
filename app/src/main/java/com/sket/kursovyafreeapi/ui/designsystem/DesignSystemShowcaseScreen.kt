@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -17,20 +18,39 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.sket.kursovyafreeapi.ui.theme.RickAndMortyTheme
+import kotlinx.coroutines.launch
 
 @Composable
 fun DesignSystemShowcaseScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val dataFoundation = remember(context) {
+        DataFoundationShowcase.create(context.applicationContext)
+    }
+
+    DisposableEffect(dataFoundation) {
+        onDispose(dataFoundation::close)
+    }
+
     Surface(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -43,9 +63,198 @@ fun DesignSystemShowcaseScreen(modifier: Modifier = Modifier) {
             TypographySample()
             StatusSample()
             ActionSample()
+            DataFoundationSample(dataFoundation)
         }
     }
 }
+
+@Composable
+private fun DataFoundationSample(dataFoundation: DataFoundationShowcase) {
+    val scope = rememberCoroutineScope()
+    var characterState by remember { mutableStateOf(CheckState()) }
+    var episodeState by remember { mutableStateOf(CheckState()) }
+    var locationState by remember { mutableStateOf(CheckState()) }
+    var isEpisodeSaved by remember { mutableStateOf(false) }
+    var storageMessage by remember { mutableStateOf("Проверяем Room…") }
+    var isStorageLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(dataFoundation) {
+        runCatching { dataFoundation.readEpisodeMark() }
+            .onSuccess { saved ->
+                isEpisodeSaved = saved
+                storageMessage = if (saved) "Сохранено в Room" else "Записи в Room нет"
+            }
+            .onFailure { error -> storageMessage = error.displayMessage() }
+        isStorageLoading = false
+    }
+
+    fun runCheck(
+        update: (CheckState) -> Unit,
+        request: suspend () -> String
+    ) {
+        scope.launch {
+            update(CheckState(isLoading = true, message = "Выполняется запрос…"))
+            runCatching { request() }
+                .onSuccess { message -> update(CheckState(message = message, isSuccess = true)) }
+                .onFailure { error -> update(CheckState(message = error.displayMessage())) }
+        }
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.medium)) {
+        Column(verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)) {
+            Text("Проверка data-основы", style = RickAndMortyTheme.typography.headlineSmall)
+            Text(
+                text = "Кнопки выполняют настоящие запросы к API и проверяют запись ответа в Room.",
+                style = RickAndMortyTheme.typography.bodyMedium,
+                color = RickAndMortyTheme.colors.onSurfaceVariant
+            )
+        }
+
+        DataCheckCard(
+            title = "Персонажи",
+            state = characterState,
+            onClick = {
+                runCheck({ characterState = it }, dataFoundation::checkCharacters)
+            }
+        )
+        DataCheckCard(
+            title = "Эпизоды",
+            state = episodeState,
+            onClick = {
+                runCheck({ episodeState = it }, dataFoundation::checkEpisodes)
+            }
+        )
+        DataCheckCard(
+            title = "Локации",
+            state = locationState,
+            onClick = {
+                runCheck({ locationState = it }, dataFoundation::checkLocations)
+            }
+        )
+
+        Card(
+            colors = CardDefaults.cardColors(
+                containerColor = RickAndMortyTheme.colors.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(RickAndMortyTheme.spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
+            ) {
+                Text("Локальная отметка эпизода №1", style = RickAndMortyTheme.typography.titleMedium)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
+                ) {
+                    if (isStorageLoading) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    }
+                    StatusChip(
+                        text = storageMessage,
+                        color = if (isEpisodeSaved) {
+                            RickAndMortyTheme.extendedColors.watched
+                        } else {
+                            RickAndMortyTheme.extendedColors.unknown
+                        }
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.small)
+                ) {
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        enabled = !isStorageLoading,
+                        onClick = {
+                            scope.launch {
+                                isStorageLoading = true
+                                runCatching { dataFoundation.saveEpisodeMark() }
+                                    .onSuccess {
+                                        isEpisodeSaved = dataFoundation.readEpisodeMark()
+                                        storageMessage = "Сохранено в Room"
+                                    }
+                                    .onFailure { error -> storageMessage = error.displayMessage() }
+                                isStorageLoading = false
+                            }
+                        }
+                    ) {
+                        Text("Сохранить")
+                    }
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        enabled = !isStorageLoading && isEpisodeSaved,
+                        onClick = {
+                            scope.launch {
+                                isStorageLoading = true
+                                runCatching { dataFoundation.deleteEpisodeMark() }
+                                    .onSuccess {
+                                        isEpisodeSaved = dataFoundation.readEpisodeMark()
+                                        storageMessage = "Удалено из Room"
+                                    }
+                                    .onFailure { error -> storageMessage = error.displayMessage() }
+                                isStorageLoading = false
+                            }
+                        }
+                    ) {
+                        Text("Удалить")
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DataCheckCard(
+    title: String,
+    state: CheckState,
+    onClick: () -> Unit
+) {
+    Card {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(RickAndMortyTheme.spacing.medium),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.medium)
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(RickAndMortyTheme.spacing.extraSmall)
+            ) {
+                Text(title, style = RickAndMortyTheme.typography.titleMedium)
+                Text(
+                    text = state.message,
+                    style = RickAndMortyTheme.typography.bodySmall,
+                    color = when (state.isSuccess) {
+                        true -> RickAndMortyTheme.extendedColors.alive
+                        false -> RickAndMortyTheme.colors.onSurfaceVariant
+                    }
+                )
+            }
+            Button(enabled = !state.isLoading, onClick = onClick) {
+                if (state.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        color = RickAndMortyTheme.colors.onPrimary,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Проверить")
+                }
+            }
+        }
+    }
+}
+
+private data class CheckState(
+    val isLoading: Boolean = false,
+    val message: String = "Ещё не проверено",
+    val isSuccess: Boolean = false
+)
+
+private fun Throwable.displayMessage(): String =
+    localizedMessage?.take(120) ?: "Неизвестная ошибка"
 
 @Composable
 private fun PortalHeader() {
