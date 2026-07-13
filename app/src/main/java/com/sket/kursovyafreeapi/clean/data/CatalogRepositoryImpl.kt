@@ -6,6 +6,7 @@ import com.sket.kursovyafreeapi.clean.domain.CharacterQuery
 import com.sket.kursovyafreeapi.clean.domain.EpisodeQuery
 import com.sket.kursovyafreeapi.clean.domain.LocationQuery
 import com.sket.kursovyafreeapi.clean.domain.RelatedItems
+import com.sket.kursovyafreeapi.clean.domain.asApiFilter
 
 import androidx.room.withTransaction
 import com.sket.kursovyafreeapi.data.local.RickAndMortyDatabase
@@ -224,5 +225,4 @@ private fun String?.pageNumber(): Int? = this
     ?.substringAfter("page=", missingDelimiterValue = "")
     ?.substringBefore('&')
     ?.toIntOrNull()
-
 

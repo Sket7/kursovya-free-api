@@ -6,6 +6,8 @@ import com.sket.kursovyafreeapi.model.EpisodeUserData
 import com.sket.kursovyafreeapi.model.Location
 import kotlinx.coroutines.flow.Flow
 
+const val MAX_COMMENT_LENGTH = 300
+
 interface CatalogRepository {
     suspend fun cachedCharacters(query: CharacterQuery): CachedPage<Character>?
     suspend fun refreshCharacters(query: CharacterQuery): CachedPage<Character>
