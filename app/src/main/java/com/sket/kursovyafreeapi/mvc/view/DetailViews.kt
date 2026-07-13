@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
+import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -24,6 +24,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.sket.kursovyafreeapi.mvc.MvcGraph
@@ -33,85 +34,66 @@ import com.sket.kursovyafreeapi.mvc.controller.LocationDetailsController
 import com.sket.kursovyafreeapi.mvc.controller.PersonalCommentsController
 import com.sket.kursovyafreeapi.mvc.model.CatalogModel
 import com.sket.kursovyafreeapi.mvc.model.EpisodeNotesModel
+import com.sket.kursovyafreeapi.ui.shared.PortalHero
+import com.sket.kursovyafreeapi.ui.shared.PortalScreen
+import com.sket.kursovyafreeapi.ui.shared.SectionTitle
+import com.sket.kursovyafreeapi.ui.shared.StateMessage
 import com.sket.kursovyafreeapi.ui.theme.RickAndMortyTheme
 
 @Composable
 fun EpisodeDetailsView(id: Int, graph: MvcGraph, onBack: () -> Unit, onCharacter: (Int) -> Unit) {
-    val scope = rememberCoroutineScope()
-    val controller = remember(id, graph, scope) { EpisodeDetailsController(id, graph.catalog, graph.episodeNotes, scope) }
-    val state by controller.state.collectAsState()
-    var watched by remember { mutableStateOf(false) }
-    var rating by remember { mutableStateOf<Int?>(null) }
-    var comment by remember { mutableStateOf("") }
-    LaunchedEffect(controller) { controller.start() }
-    LaunchedEffect(state.userData) { state.userData?.let { watched = it.isWatched; rating = it.rating; comment = it.comment } }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { BackHeader("Эпизод", onBack) }
-        state.item?.let { episode -> item { Text(episode.name, style = RickAndMortyTheme.typography.headlineMedium); Text("${episode.code} · ${episode.airDate}") } }
-        item {
-            Card { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text("Моя заметка", style = RickAndMortyTheme.typography.titleLarge)
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Text("Просмотрено"); Switch(watched, { watched = it }) }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) { (1..5).forEach { value -> FilterChip(rating == value, { rating = value }, label = { Text(value.toString()) }) } }
-                OutlinedTextField(comment, { comment = it.take(EpisodeNotesModel.MAX_COMMENT_LENGTH) }, Modifier.fillMaxWidth(), label = { Text("Комментарий") }, minLines = 3)
-                Button({ controller.save(watched, rating, comment) }, enabled = !state.isSaving) { Text(if (state.isSaving) "Сохранение…" else "Сохранить в Room") }
-                state.message?.let { Text(it) }
-            } }
+    val scope = rememberCoroutineScope(); val controller = remember(id, graph, scope) { EpisodeDetailsController(id, graph.catalog, graph.episodeNotes, scope) }; val state by controller.state.collectAsState()
+    var watched by remember { mutableStateOf(false) }; var rating by remember { mutableStateOf<Int?>(null) }; var comment by remember { mutableStateOf("") }
+    LaunchedEffect(controller) { controller.start() }; LaunchedEffect(state.userData) { state.userData?.let { watched = it.isWatched; rating = it.rating; comment = it.comment } }
+    PortalScreen("Эпизод", onBack) { padding ->
+        LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            state.item?.let { episode -> item { PortalHero("${episode.code} · ${episode.airDate}", episode.name, "${episode.characterIds.size} персонажей появляются в этом эпизоде") } }
+            item { NoteEditor(watched, { watched = it }, rating, { rating = it }, comment, { comment = it.take(EpisodeNotesModel.MAX_COMMENT_LENGTH) }, state.isSaving, { controller.save(watched, rating, comment) }, state.message) }
+            item { SectionTitle("Персонажи", "Нажмите на героя, чтобы открыть подробности") }
+            items(state.related) { CharacterCard(it, onCharacter) }
+            if (state.isLoading) item { StateMessage("Открываем эпизод…", "Загружаем детали") }
+            if (state.isOffline) item { StateMessage("Офлайн-режим", "Показаны доступные данные из Room") }
         }
-        item { Text("Персонажи", style = RickAndMortyTheme.typography.titleLarge) }
-        items(state.related) { CharacterCard(it, onCharacter) }
-        if (state.isLoading) item { Text("Загрузка…") }
-        if (state.isOffline) item { Text("Показаны доступные данные из кеша") }
     }
 }
 
 @Composable
-fun CharacterDetailsView(
-    id: Int,
-    model: CatalogModel,
-    onBack: () -> Unit,
-    onEpisode: (Int) -> Unit,
-    onLocation: (Int) -> Unit
-) {
-    val scope = rememberCoroutineScope(); val controller = remember(id, model, scope) { CharacterDetailsController(id, model, scope) }; val state by controller.state.collectAsState()
-    LaunchedEffect(controller) { controller.start() }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { BackHeader("Персонаж", onBack) }
-        state.item?.let { value -> item { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) { AsyncImage(value.imageUrl, value.name, Modifier.fillMaxWidth()); Text(value.name, style = RickAndMortyTheme.typography.headlineMedium); Text("${value.status} · ${value.species} · ${value.gender}"); Text("Происхождение: ${value.origin.name}"); value.origin.id?.let { OutlinedButton({ onLocation(it) }) { Text("Открыть происхождение") } }; Text("Локация: ${value.location.name}"); value.location.id?.let { OutlinedButton({ onLocation(it) }) { Text("Открыть локацию") } } } } }
-        item { Text("Эпизоды", style = RickAndMortyTheme.typography.titleLarge) }
-        items(state.related) { EpisodeCard(it, onEpisode) }
-        if (state.isLoading) item { Text("Загрузка…") }
+private fun NoteEditor(watched: Boolean, onWatched: (Boolean) -> Unit, rating: Int?, onRating: (Int) -> Unit, comment: String, onComment: (String) -> Unit, saving: Boolean, save: () -> Unit, message: String?) {
+    ElevatedCard(Modifier.fillMaxWidth(), shape = RickAndMortyTheme.shapes.extraLarge) {
+        Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            SectionTitle("Моё впечатление", "Хранится только на этом устройстве")
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { Column { Text("Просмотрено", style = RickAndMortyTheme.typography.titleMedium); Text(if (watched) "Эпизод отмечен" else "Ещё не смотрел", style = RickAndMortyTheme.typography.bodySmall, color = RickAndMortyTheme.colors.onSurfaceVariant) }; Switch(watched, onWatched) }
+            Text("Оценка", style = RickAndMortyTheme.typography.labelLarge)
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) { (1..5).forEach { value -> FilterChip(rating == value, { onRating(value) }, label = { Text("★ $value") }) } }
+            OutlinedTextField(comment, onComment, Modifier.fillMaxWidth(), label = { Text("Комментарий") }, supportingText = { Text("${comment.length}/${EpisodeNotesModel.MAX_COMMENT_LENGTH}") }, minLines = 3, maxLines = 5, shape = RickAndMortyTheme.shapes.medium)
+            Button(save, Modifier.fillMaxWidth(), enabled = !saving) { Text(if (saving) "Сохраняем…" else "Сохранить впечатление") }
+            message?.let { Text(it, style = RickAndMortyTheme.typography.bodySmall, color = RickAndMortyTheme.colors.primary) }
+        }
     }
+}
+
+@Composable
+fun CharacterDetailsView(id: Int, model: CatalogModel, onBack: () -> Unit, onEpisode: (Int) -> Unit, onLocation: (Int) -> Unit) {
+    val scope = rememberCoroutineScope(); val controller = remember(id, model, scope) { CharacterDetailsController(id, model, scope) }; val state by controller.state.collectAsState(); LaunchedEffect(controller) { controller.start() }
+    PortalScreen("Персонаж", onBack) { padding -> LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        state.item?.let { value -> item { ElevatedCard(shape = RickAndMortyTheme.shapes.extraLarge) { AsyncImage(value.imageUrl, value.name, Modifier.fillMaxWidth(), contentScale = ContentScale.Crop); Column(Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { Text(value.name, style = RickAndMortyTheme.typography.headlineMedium); Text("${value.status} · ${value.species} · ${value.gender}", color = RickAndMortyTheme.colors.primary); Text("Происхождение · ${value.origin.name}"); value.origin.id?.let { OutlinedButton({ onLocation(it) }) { Text("Открыть происхождение") } }; Text("Последняя локация · ${value.location.name}"); value.location.id?.let { OutlinedButton({ onLocation(it) }) { Text("Открыть локацию") } } } } } }
+        item { SectionTitle("Эпизоды", "Все появления персонажа") }; items(state.related) { EpisodeCard(it, onEpisode) }; if (state.isLoading) item { StateMessage("Ищем персонажа…", "Это займёт пару секунд") }
+    } }
 }
 
 @Composable
 fun LocationDetailsView(id: Int, model: CatalogModel, onBack: () -> Unit, onCharacter: (Int) -> Unit) {
-    val scope = rememberCoroutineScope(); val controller = remember(id, model, scope) { LocationDetailsController(id, model, scope) }; val state by controller.state.collectAsState()
-    LaunchedEffect(controller) { controller.start() }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { BackHeader("Локация", onBack) }
-        state.item?.let { value -> item { Text(value.name, style = RickAndMortyTheme.typography.headlineMedium); Text("${value.type} · ${value.dimension}") } }
-        item { Text("Жители", style = RickAndMortyTheme.typography.titleLarge) }
-        items(state.related) { CharacterCard(it, onCharacter) }
-        if (state.isLoading) item { Text("Загрузка…") }
-    }
+    val scope = rememberCoroutineScope(); val controller = remember(id, model, scope) { LocationDetailsController(id, model, scope) }; val state by controller.state.collectAsState(); LaunchedEffect(controller) { controller.start() }
+    PortalScreen("Локация", onBack) { padding -> LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        state.item?.let { value -> item { PortalHero(value.type, value.name, "Измерение: ${value.dimension} · жителей: ${value.residentIds.size}") } }; item { SectionTitle("Жители", "Последний раз их видели здесь") }; items(state.related) { CharacterCard(it, onCharacter) }; if (state.isLoading) item { StateMessage("Ищем локацию…", "Сверяем координаты мультивселенной") }
+    } }
 }
 
 @Composable
 fun PersonalCommentsView(notes: EpisodeNotesModel, onBack: () -> Unit, onEpisode: (Int) -> Unit) {
-    val scope = rememberCoroutineScope(); val controller = remember(notes, scope) { PersonalCommentsController(notes, scope) }; val state by controller.state.collectAsState()
-    LaunchedEffect(controller) { controller.start() }
-    LazyColumn(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        item { BackHeader("Мои комментарии", onBack) }
-        if (!state.isLoading && state.items.isEmpty()) item { Text("Вы ещё не оставили комментариев") }
-        items(state.items, key = { it.userData.episodeId }) { value ->
-            Card(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(value.episode?.name ?: "Эпизод #${value.userData.episodeId}", style = RickAndMortyTheme.typography.titleMedium)
-                Text(value.episode?.code.orEmpty()); Text(value.userData.comment); Text("Оценка: ${value.userData.rating ?: "—"}/5 · ${if (value.userData.isWatched) "просмотрено" else "не просмотрено"}")
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button({ onEpisode(value.userData.episodeId) }) { Text("Открыть") }; OutlinedButton({ controller.deleteComment(value.userData.episodeId) }) { Text("Удалить комментарий") } }
-            } }
-        }
-    }
+    val scope = rememberCoroutineScope(); val controller = remember(notes, scope) { PersonalCommentsController(notes, scope) }; val state by controller.state.collectAsState(); LaunchedEffect(controller) { controller.start() }
+    PortalScreen("Мои комментарии", onBack) { padding -> LazyColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 16.dp), contentPadding = androidx.compose.foundation.layout.PaddingValues(bottom = 28.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        item { SectionTitle("Личные впечатления", "Доступны без подключения к интернету") }; if (!state.isLoading && state.items.isEmpty()) item { StateMessage("Здесь пока пусто", "Оцените эпизод и добавьте комментарий — он появится здесь") }
+        items(state.items, key = { it.userData.episodeId }) { value -> ElevatedCard(Modifier.fillMaxWidth()) { Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) { Text(value.episode?.name ?: "Эпизод #${value.userData.episodeId}", style = RickAndMortyTheme.typography.titleMedium); Text("${value.episode?.code.orEmpty()} · ★ ${value.userData.rating ?: "—"}/5", style = RickAndMortyTheme.typography.labelLarge, color = RickAndMortyTheme.colors.primary); Text(value.userData.comment, style = RickAndMortyTheme.typography.bodyMedium); Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) { Button({ onEpisode(value.userData.episodeId) }) { Text("Открыть") }; OutlinedButton({ controller.deleteComment(value.userData.episodeId) }) { Text("Удалить") } } } } }
+    } }
 }
-
-@Composable private fun BackHeader(title: String, onBack: () -> Unit) { Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) { OutlinedButton(onBack) { Text("Назад") }; Text(title, style = RickAndMortyTheme.typography.titleLarge) } }
