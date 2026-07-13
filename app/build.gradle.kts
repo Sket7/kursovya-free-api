@@ -10,6 +10,8 @@ android {
     defaultConfig {
         applicationId = "com.sket.kursovyafreeapi"
         minSdk = 30
+//         Android 17 behavior changes reviewed; see AGENTS.md.
+//        noinspection EditedTargetSdkVersion
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
