@@ -4,7 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import com.sket.kursovyafreeapi.ui.designsystem.DesignSystemShowcaseScreen
+import com.sket.kursovyafreeapi.mvc.view.MvcApp
 import com.sket.kursovyafreeapi.ui.theme.RickAndMortyAppTheme
 
 class MainActivity : ComponentActivity() {
@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             RickAndMortyAppTheme {
-                DesignSystemShowcaseScreen()
+                MvcApp()
             }
         }
     }
