@@ -4,7 +4,7 @@
 
 ```text
 Используя общий контекст проекта и уже созданные FakeRickAndMortyBackend и Fixtures, напиши ровно
-2 UI-теста на Jetpack Compose UI Test (androidx.compose.ui:ui-test-junit4, версия из Compose BOM)
+2 UI-теста на Jetpack Compose UI Test (androidx.compose.ui:ui-test-junit4, версия из Compose BOM, API junit4.v2)
 в app/src/androidTest, пакет ui.
 
 1. HomeNavigationUiTest — на реальной MainActivity (createAndroidComposeRule<MainActivity>):
